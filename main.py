@@ -75,32 +75,76 @@ def search_ranked_inverted_index( query: str,ranked_inverted_index: dict[str,dic
     )
     return [doc for doc,score in ranked_docs]
 
+def search_ranked_inverted_index_with_snippets( query: str,ranked_inverted_index: dict[str,dict[str,int]] ,file_data:dict[str,str]) -> list[dict]:
+    tokens=set(tokenize(query))
+    scores: dict[str,int]={}
+    results=[]
+    for token in tokens:
+        doc_set=ranked_inverted_index.get(token,{})
+        for file_name,count in doc_set.items():
+            if file_name not in scores:
+                scores[file_name]=0
+            scores[file_name]+=count
+
+    ranked_docs=sorted(
+        scores.items(),
+        key= lambda x: x[1],
+        reverse=True
+    )
+    for file_name,score in ranked_docs:
+        snippet=create_snippet(file_data[file_name],tokens)
+        results.append({
+            "file_name":file_name,
+            "score":score,
+            "snippet":snippet
+        })
+    return results
+
+
 def measure_time(func, *args):
     start=time.perf_counter()
     result=func(*args)
     end=time.perf_counter()
     return result,end-start
 
+
+def create_snippet( content: str, query_tokens:set[str], max_snippets=3 , snippet_window=100) -> list[str]:
+    lower_content=content.lower()
+    snippets=[]
+    start_pos=0
+    for token in query_tokens:
+        position=lower_content.find(token,start_pos)
+        if(position==-1): continue
+        start_pos=max(0,position-snippet_window // 2)
+        end_pos= min(len(content),position+snippet_window //2)
+        snippet=content[start_pos:end_pos]
+        snippet=snippet.replace("\n"," ")
+        snippets.append(snippet)
+        start_pos=position+len(token)
+    
+    return snippets[:max_snippets]
+
+
 def main():
     file_details=load_files("data")
     
     inverted_index=build_inverted_index(file_details)
     ranked_inverted_index=build_ranked_inverted_index(file_details)
-    print(ranked_inverted_index)
     query=" Computer programming course computer"
     queries= [
         "recommendation systems",
-        "neural networks",
-        "tcp ip protocol",
-        "database normalization",
-        "indexing in sql",
-        "operating system scheduling",
-        "deadlock prevention",
+        # "neural networks",
+        # "tcp ip protocol",
+        # "database normalization",
+        # "indexing in sql",
+        # "operating system scheduling",
+        # "deadlock prevention",
     ]
     search_methods={
         # "basic":lambda q:basic_search(q,file_details),
         # "inverted_index": lambda q: search_inverted_index(q, inverted_index),
-        "ranked_inverted_index": lambda q:search_ranked_inverted_index(q,ranked_inverted_index)
+        # "ranked_inverted_index": lambda q:search_ranked_inverted_index(q,ranked_inverted_index),
+        "ranked_inverted_index_with_snippets": lambda q:search_ranked_inverted_index_with_snippets(q,ranked_inverted_index,file_details)
     }
     
     results=[]
@@ -117,7 +161,12 @@ def main():
             )
             print(f"METHOD_NAME : {search_method}")
             print(f"TIME_TAKEN : {time_taken}")
-            print(f"RESULTS : {result}")
+            for item in result:
+                print(f"FILE_NAME: {item['file_name']}")
+                print(f"SCORE: {item['score']}")
+                print("SNIPPETS:")
+                for snippet in item['snippet']:
+                    print(f"{snippet}")
             print("-"*50)
         
 
