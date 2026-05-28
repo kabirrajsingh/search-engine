@@ -37,6 +37,19 @@ def build_inverted_index(fileData: dict[str,str]) -> dict[str,set[str]]:
             result[token].add(file_name)
     return result
 
+def build_ranked_inverted_index(fileData: dict[str,str]) -> dict[str,dict[str,int]]:
+    result={}
+    for file_name,file_content in fileData.items():
+        tokens=tokenize(file_content)
+        for token in tokens:
+            if token not in result:
+                result[token]={}
+            if file_name not in result[token]:
+                result[token][file_name]=1
+            else:
+                result[token][file_name]+=1
+    return result
+
 def search_inverted_index( query: str,invertedIndex: dict[str,set[str]] ) -> list[str]:
     tokens=set(tokenize(query))
     result_set=[]
@@ -44,6 +57,23 @@ def search_inverted_index( query: str,invertedIndex: dict[str,set[str]] ) -> lis
         doc_set=invertedIndex.get(token,set())
         result_set.append(doc_set)
     return list(set.union(*result_set))
+
+def search_ranked_inverted_index( query: str,ranked_inverted_index: dict[str,dict[str,int]] ) -> list[str]:
+    tokens=set(tokenize(query))
+    scores: dict[str,int]={}
+    for token in tokens:
+        doc_set=ranked_inverted_index.get(token,{})
+        for file_name,count in doc_set.items():
+            if file_name not in scores:
+                scores[file_name]=0
+            scores[file_name]+=count
+
+    ranked_docs=sorted(
+        scores.items(),
+        key= lambda x: x[1],
+        reverse=True
+    )
+    return [doc for doc,score in ranked_docs]
 
 def measure_time(func, *args):
     start=time.perf_counter()
@@ -55,6 +85,8 @@ def main():
     file_details=load_files("data")
     
     inverted_index=build_inverted_index(file_details)
+    ranked_inverted_index=build_ranked_inverted_index(file_details)
+    print(ranked_inverted_index)
     query=" Computer programming course computer"
     queries= [
         "recommendation systems",
@@ -66,8 +98,9 @@ def main():
         "deadlock prevention",
     ]
     search_methods={
-        "basic":lambda q:basic_search(q,file_details),
-        "inverted_index": lambda q: search_inverted_index(q, inverted_index)
+        # "basic":lambda q:basic_search(q,file_details),
+        # "inverted_index": lambda q: search_inverted_index(q, inverted_index),
+        "ranked_inverted_index": lambda q:search_ranked_inverted_index(q,ranked_inverted_index)
     }
     
     results=[]
@@ -84,19 +117,10 @@ def main():
             )
             print(f"METHOD_NAME : {search_method}")
             print(f"TIME_TAKEN : {time_taken}")
-            # print(f"RESULTS : {results}")
+            print(f"RESULTS : {result}")
             print("-"*50)
         
-    # for result in results:
-    #     print(result)
-        
 
-    # result,time=measure_time(basic_search,query,fileData)
-    # print(result)
-    # print(time)
-    # result,time2=measure_time(search_inverted_index,invertedIndex,query)
-    # print(result)
-    # print(time2)
 
 if __name__=="__main__":
     main()
