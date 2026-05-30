@@ -1,4 +1,6 @@
+import os
 import re
+import json
 def tokenize(query:str) -> list[str]:
     return re.findall(r"[a-zA-Z]+",query.lower())
 
@@ -101,3 +103,19 @@ def create_snippet( content: str, query_tokens:set[str], max_snippets=3 , snippe
         start_pos=position+len(token)
     
     return snippets[:max_snippets]
+
+
+def save_index(index_data:dict[str,set[str]],path: str):
+    with open(path,"w",encoding="utf-8") as f:
+        json.dump(index_data,f)
+
+def check_file_exists(path:str) -> bool:
+    if(os.path.exists(path)):
+        print(f"File already exists at {path}")
+        return True
+    return False
+
+def read_index(path: str)-> dict[str,set[str]]:
+    with open(path,"r",encoding="utf-8") as f:
+        data=json.load(f)
+    return data
