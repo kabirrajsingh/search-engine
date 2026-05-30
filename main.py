@@ -1,4 +1,4 @@
-from search_engine.searchengine import build_inverted_index, build_ranked_inverted_index, search_ranked_inverted_index_with_snippets
+from search_engine.searchengine import build_inverted_index, build_ranked_inverted_index, check_file_exists, read_index, save_index, search_ranked_inverted_index_with_snippets
 import os
 import time
 
@@ -19,12 +19,15 @@ def measure_time(func, *args):
     end=time.perf_counter()
     return result,end-start
 
-
+INDEX_PATH="index_data.json"
 def main():
     file_details=load_files("data")
-    
+    if not check_file_exists(INDEX_PATH):
+        ranked_inverted_index=build_ranked_inverted_index(file_details)
+        save_index(ranked_inverted_index,INDEX_PATH)
+    else:
+        ranked_inverted_index=read_index(INDEX_PATH)
     inverted_index=build_inverted_index(file_details)
-    ranked_inverted_index=build_ranked_inverted_index(file_details)
     query=" Computer programming course computer"
     queries= [
         "recommendation systems",
