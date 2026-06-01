@@ -4,7 +4,7 @@ import json
 def tokenize(query:str) -> list[str]:
     return re.findall(r"[a-zA-Z]+",query.lower())
 
-def basic_search(query: str,fileData: dict[str,str]) -> list[str]:
+def basic_search(query: str,fileData: dict[str,str]) -> list[dict]:
     tokens=set(tokenize(query))
     res=[]
     for fileName,file in fileData.items():
@@ -13,7 +13,7 @@ def basic_search(query: str,fileData: dict[str,str]) -> list[str]:
         # tokens in fileData
         if(tokenized_file_data & tokens):
             res.append(fileName)
-    return res
+    return [{"file_name":file_name} for file_name in res]
 
 def build_inverted_index(fileData: dict[str,str]) -> dict[str,set[str]]:
     result={}
@@ -38,17 +38,19 @@ def build_ranked_inverted_index(fileData: dict[str,str]) -> dict[str,dict[str,in
                 result[token][file_name]+=1
     return result
 
-def search_inverted_index( query: str,invertedIndex: dict[str,set[str]] ) -> list[str]:
+def search_inverted_index( query: str,invertedIndex: dict[str,set[str]] ) -> list[dict]:
     tokens=set(tokenize(query))
     result_set=[]
     for token in tokens:
         doc_set=invertedIndex.get(token,set())
         result_set.append(doc_set)
-    return list(set.union(*result_set))
+    results=list(set.union(*result_set))
+    return [{"file_name":file_name} for file_name in results]
 
-def search_ranked_inverted_index( query: str,ranked_inverted_index: dict[str,dict[str,int]] ) -> list[str]:
+def search_ranked_inverted_index( query: str,ranked_inverted_index: dict[str,dict[str,int]] ) -> list[dict]:
     tokens=set(tokenize(query))
     scores: dict[str,int]={}
+    results=[]
     for token in tokens:
         doc_set=ranked_inverted_index.get(token,{})
         for file_name,count in doc_set.items():
@@ -61,7 +63,7 @@ def search_ranked_inverted_index( query: str,ranked_inverted_index: dict[str,dic
         key= lambda x: x[1],
         reverse=True
     )
-    return [doc for doc,score in ranked_docs]
+    return [{"file_name":doc,"score":score} for doc,score in ranked_docs]
 
 def search_ranked_inverted_index_with_snippets( query: str,ranked_inverted_index: dict[str,dict[str,int]] ,file_data:dict[str,str]) -> list[dict]:
     tokens=set(tokenize(query))
