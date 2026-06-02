@@ -67,6 +67,9 @@ wheels = [
 name = "searchengine"
 version = "0.1.0"
 source = { virtual = "." }
+dependencies = [
+    { name = "stopwords" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -74,6 +77,16 @@ dev = [
 ]
 
 [package.metadata]
+requires-dist = [{ name = "stopwords", specifier = ">=1.0.2" }]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=9.0.3" }]
+
+[[package]]
+name = "stopwords"
+version = "1.0.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/cd/fe/60179cb63523dc2f67aa477895de7c58f1f76aabadf179a5da66048701f2/stopwords-1.0.2.tar.gz", hash = "sha256:91cc3ecaab197dbd36164ab7cbaa02530154e5d75d0e562d4e1c1fd458b5b8cc", size = 44171, upload-time = "2025-09-10T17:50:33.872Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/83/39/a4b6e68ba1df2848a28b195ae32626b7a4ae6fb3fd156c078cfdad3ab1dd/stopwords-1.0.2-py2.py3-none-any.whl", hash = "sha256:9e0df6edd1664011b7775f48b4163cf1c741e3011056de2b29c71d628a7331b1", size = 37495, upload-time = "2025-09-10T17:50:32.785Z" },
+]

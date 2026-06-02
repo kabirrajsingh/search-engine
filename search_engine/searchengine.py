@@ -1,14 +1,23 @@
 import os
 import re
 import json
+from stopwords import get_stopwords
+
+STOPWORDS: list[str]=get_stopwords("english")
+
 def tokenize(query:str) -> list[str]:
     return re.findall(r"[a-zA-Z]+",query.lower())
 
-def basic_search(query: str,fileData: dict[str,str]) -> list[dict]:
+
+def tokenize_with_stopwords(query:str , stopwords:list[str]) -> list[str]:
     tokens=set(tokenize(query))
+    return [token for token in tokens if token not in stopwords]
+
+def basic_search(query: str,fileData: dict[str,str]) -> list[dict]:
+    tokens=set(tokenize_with_stopwords(query,STOPWORDS))
     res=[]
     for fileName,file in fileData.items():
-        tokenized_file_data=set(tokenize(file))
+        tokenized_file_data=set(tokenize_with_stopwords(file,STOPWORDS))
         # tokens in the query
         # tokens in fileData
         if(tokenized_file_data & tokens):
@@ -18,7 +27,7 @@ def basic_search(query: str,fileData: dict[str,str]) -> list[dict]:
 def build_inverted_index(fileData: dict[str,str]) -> dict[str,set[str]]:
     result={}
     for file_name,file_content in fileData.items():
-        tokens=set(tokenize(file_content))
+        tokens=set(tokenize_with_stopwords(file_content,STOPWORDS))
         for token in tokens:
             if token not in result:
                 result[token]=set()
@@ -28,7 +37,7 @@ def build_inverted_index(fileData: dict[str,str]) -> dict[str,set[str]]:
 def build_ranked_inverted_index(fileData: dict[str,str]) -> dict[str,dict[str,int]]:
     result={}
     for file_name,file_content in fileData.items():
-        tokens=tokenize(file_content)
+        tokens=set(tokenize_with_stopwords(file_content,STOPWORDS))
         for token in tokens:
             if token not in result:
                 result[token]={}
@@ -39,7 +48,7 @@ def build_ranked_inverted_index(fileData: dict[str,str]) -> dict[str,dict[str,in
     return result
 
 def search_inverted_index( query: str,invertedIndex: dict[str,set[str]] ) -> list[dict]:
-    tokens=set(tokenize(query))
+    tokens=set(tokenize_with_stopwords(query,STOPWORDS))
     result_set=[]
     for token in tokens:
         doc_set=invertedIndex.get(token,set())
@@ -48,7 +57,7 @@ def search_inverted_index( query: str,invertedIndex: dict[str,set[str]] ) -> lis
     return [{"file_name":file_name} for file_name in results]
 
 def search_ranked_inverted_index( query: str,ranked_inverted_index: dict[str,dict[str,int]] ) -> list[dict]:
-    tokens=set(tokenize(query))
+    tokens=set(tokenize_with_stopwords(query,STOPWORDS))
     scores: dict[str,int]={}
     results=[]
     for token in tokens:
@@ -66,7 +75,7 @@ def search_ranked_inverted_index( query: str,ranked_inverted_index: dict[str,dic
     return [{"file_name":doc,"score":score} for doc,score in ranked_docs]
 
 def search_ranked_inverted_index_with_snippets( query: str,ranked_inverted_index: dict[str,dict[str,int]] ,file_data:dict[str,str]) -> list[dict]:
-    tokens=set(tokenize(query))
+    tokens=set(tokenize_with_stopwords(query,STOPWORDS))
     scores: dict[str,int]={}
     results=[]
     for token in tokens:
