@@ -20,3 +20,13 @@ Ranking will get serious
 - Boolean Search
 - Packaging the app
 - API UI etc....
+
+TF-IDF -> Term Frequency- Inverse Document Frequency
+
+IDF - How rare is this term across alol documents?
+
+Final score= term_frequency* inverse_document_frequency
+
+in our code= result[token][file_name] = term_frequency * idf
+
+IDF= math.log((total_docs +1) / (document_frequency +1))
