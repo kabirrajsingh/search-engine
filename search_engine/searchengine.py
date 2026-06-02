@@ -1,3 +1,4 @@
+import math
 import os
 import re
 import json
@@ -9,9 +10,73 @@ def tokenize(query:str) -> list[str]:
     return re.findall(r"[a-zA-Z]+",query.lower())
 
 
-def tokenize_with_stopwords(query:str , stopwords:list[str]) -> list[str]:
-    tokens=set(tokenize(query))
-    return [token for token in tokens if token not in stopwords]
+def tokenize_with_stopwords(query:str , stopwords:set[str]) -> list[str]:
+    return [token for token in tokenize(query)
+            if token not in stopwords]
+
+
+def calculate_idf(total_docs,frequency) -> float:
+    if(total_docs) <= 0:
+        return 0.0
+    return math.log((total_docs+1)/(frequency+1))
+
+
+def build_tfidf_index(fileData:dict[str,str])-> dict[str,dict[str,float]]:
+    ranked_index=build_ranked_inverted_index(fileData)
+    total_docs=len(fileData)
+    result={}
+    for token,document_counts in ranked_index.items():
+        idf=calculate_idf(total_docs,len(document_counts))
+        result[token]={}
+        for file_name,term_frequency in document_counts.items():
+            result[token][file_name]=term_frequency*idf
+    return result
+
+def search_tfidf_index_with_snippets( query: str,tfidf_index:  dict[str,dict[str,float]],file_data:dict[str,str]) -> list[dict]:
+    results=[]
+    tokens=set(tokenize_with_stopwords(query,STOPWORDS))
+    scores:dict[str,float]={}
+    for token in tokens:
+        doc_set=tfidf_index.get(token,{})
+        for file_name,weight in doc_set.items():
+            if weight <= 0:
+                continue
+            if file_name not in scores:
+                scores[file_name]=0
+            scores[file_name]=weight
+
+    ranked_docs=sorted(
+        scores.items(),
+        key= lambda x: (-x[1],x[0])
+    )
+    for file_name,score in ranked_docs:
+        snippet=create_snippet(file_data[file_name],tokens)
+        results.append({
+            "file_name":file_name,
+            "score":score,
+            "snippet":snippet
+        })
+    return results
+
+
+def search_tfidf_index(query:str, tfidf_index:dict[str,dict[str,float]]) -> list[dict]:
+    tokens=set(tokenize_with_stopwords(query,STOPWORDS))
+    scores:dict[str,float]={}
+    for token in tokens:
+        doc_set=tfidf_index.get(token,{})
+        for file_name,weight in doc_set.items():
+            if weight <= 0:
+                continue
+            if file_name not in scores:
+                scores[file_name]=0
+            scores[file_name]=weight
+
+    ranked_docs=sorted(
+        scores.items(),
+        key= lambda x: (-x[1],x[0])
+    )
+    return [{"file_name":doc,"score":round(score,4)} for doc,score in ranked_docs]
+
 
 def basic_search(query: str,fileData: dict[str,str]) -> list[dict]:
     tokens=set(tokenize_with_stopwords(query,STOPWORDS))
@@ -34,17 +99,18 @@ def build_inverted_index(fileData: dict[str,str]) -> dict[str,set[str]]:
             result[token].add(file_name)
     return result
 
-def build_ranked_inverted_index(fileData: dict[str,str]) -> dict[str,dict[str,int]]:
-    result={}
-    for file_name,file_content in fileData.items():
-        tokens=set(tokenize_with_stopwords(file_content,STOPWORDS))
+def build_ranked_inverted_index(
+    fileData: dict[str, str]
+) -> dict[str, dict[str, int]]:
+    result = {}
+
+    for file_name, file_content in fileData.items():
+        tokens = tokenize_with_stopwords(file_content, STOPWORDS)
+
         for token in tokens:
-            if token not in result:
-                result[token]={}
-            if file_name not in result[token]:
-                result[token][file_name]=1
-            else:
-                result[token][file_name]+=1
+            result.setdefault(token, {})
+            result[token][file_name] = result[token].get(file_name, 0) + 1
+
     return result
 
 def search_inverted_index( query: str,invertedIndex: dict[str,set[str]] ) -> list[dict]:
