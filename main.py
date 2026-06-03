@@ -1,4 +1,4 @@
-from search_engine.searchengine import basic_search, build_inverted_index, build_ranked_inverted_index, build_tfidf_index, check_file_exists, read_index, save_index, search_inverted_index, search_ranked_inverted_index, search_ranked_inverted_index_with_snippets, search_tfidf_index, search_tfidf_index_with_snippets
+from search_engine.searchengine import basic_search, build_bm25_index, build_inverted_index, build_ranked_inverted_index, build_tfidf_index, check_file_exists, read_index, save_index, search_bm25_index, search_bm25_index_with_snippets, search_inverted_index, search_ranked_inverted_index, search_ranked_inverted_index_with_snippets, search_tfidf_index, search_tfidf_index_with_snippets
 import os
 import time
 
@@ -52,7 +52,8 @@ def load_or_build_ranked_index(file_details: dict[str,str]):
 def run_method_comparison(file_details: dict[str,str]):
     ranked_inverted_index=load_or_build_ranked_index(file_details)
     inverted_index=build_inverted_index(file_details)
-    tfidf_index=build_tfidf_index(file_details)
+    tfidf_index=build_tfidf_index(file_details) 
+    bm25_index=build_bm25_index(file_details)
     search_methods={
         # "basic":lambda q:basic_search(q,file_details),
         # "inverted_index": lambda q: search_inverted_index(q, inverted_index),
@@ -60,6 +61,8 @@ def run_method_comparison(file_details: dict[str,str]):
         # "ranked_inverted_index_with_snippets": lambda q:search_ranked_inverted_index_with_snippets(q,ranked_inverted_index,file_details),
         "tfidf_index_search": lambda q:search_tfidf_index(q,tfidf_index),
         "tfidf_index_search": lambda q:search_tfidf_index_with_snippets(q,tfidf_index,file_details),
+        "bm25_index_search":  lambda q:search_bm25_index(q,bm25_index),
+        "bm25_index_search": lambda q:search_bm25_index_with_snippets(q,bm25_index,file_details),
     }
 
     results=[]
@@ -95,6 +98,14 @@ TFIDF_DEMO_DOCUMENTS={
     "some_doc.txt":"system database indexing"
 }
 
+
+BM25_DEMO_QUERY="nlp retrieval"
+BM25_DEMO_DOCUMENTS ={
+    "keyword_stuffed_nlp.txt":"nlp nlp nlp nlp nlp nlp nlp",
+    "relevant_nlp_retrieval.txt":"nlp retrieval search ranking",
+    "background_retrieval.txt":"retrieval database indexing"
+}
+
 def show_demo_without_tfidf():
     ranked_inverted_index=load_or_build_ranked_index(TFIDF_DEMO_DOCUMENTS)
     print(search_ranked_inverted_index_with_snippets(TFIDF_DEMO_QUERY,ranked_inverted_index,TFIDF_DEMO_DOCUMENTS))
@@ -103,9 +114,18 @@ def show_demo_with_tfidf():
     tfidf_index=build_tfidf_index(TFIDF_DEMO_DOCUMENTS)
     print(search_tfidf_index(TFIDF_DEMO_QUERY,tfidf_index))
 
+def show_demo_without_bm25():
+    tfidf_index=build_tfidf_index(BM25_DEMO_DOCUMENTS)
+    print(search_tfidf_index(BM25_DEMO_QUERY,tfidf_index))
+
+def show_demo_with_bm25():
+    bm25_index=build_bm25_index(BM25_DEMO_DOCUMENTS)
+    print(search_bm25_index(BM25_DEMO_QUERY,bm25_index))
+
 def main():
     file_details=load_files("data")
     run_method_comparison(file_details)
+    # show_demo_with_bm25()
 
 if __name__=="__main__":
     main()
