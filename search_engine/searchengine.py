@@ -21,6 +21,87 @@ def calculate_idf(total_docs,frequency) -> float:
     return math.log((total_docs+1)/(frequency+1))
 
 
+def calculate_bm25_idf(total_docs:int, document_frequency:int) -> float:
+    if total_docs <=0 or document_frequency <=0 :
+        return 0.0
+    return math.log(1 + ((total_docs - document_frequency + 0.5)/(document_frequency + 0.5)))
+
+def calculate_document_lengths(fileData:dict[str,str]) -> dict[str,int]:
+    return{
+        file_name:len(tokenize_with_stopwords(file_content,STOPWORDS))
+        for file_name, file_content in fileData.items()
+    }
+
+def build_bm25_index(fileData:dict[str,str],k1:float=1.5,b:float=0.75) -> dict[str,dict[str,float]]:
+    ranked_index=build_ranked_inverted_index(fileData)
+    document_lengths = calculate_document_lengths(fileData)
+    average_document_length=calculate_average_document_lengths(document_lengths)
+    total_docs=len(fileData)
+
+    result={}
+
+    for token,document_counts in ranked_index.items():
+        idf=calculate_bm25_idf(total_docs,len(document_counts))
+        result[token] ={}
+        for file_name, term_frequency in document_counts.items():
+            document_length=document_lengths[file_name]
+            length_normalizer = 1 - b + b * (document_length/average_document_length)
+            saturated_tf = (term_frequency * (k1+1)) / (term_frequency + k1 * length_normalizer) 
+            result[token][file_name]= idf * saturated_tf
+    return result
+
+def calculate_average_document_lengths(document_lengths: dict[str,int]) -> float:
+    if not document_lengths:
+        return 0.0
+    return sum(document_lengths.values()) / len(document_lengths)
+
+
+
+def search_bm25_index(query:str, bm25_index:dict[str,dict[str,float]]) -> list[dict]:
+    tokens=set(tokenize_with_stopwords(query,STOPWORDS))
+    scores:dict[str,float]={}
+    for token in tokens:
+        doc_set=bm25_index.get(token,{})
+        for file_name,weight in doc_set.items():
+            if weight <= 0:
+                continue
+            if file_name not in scores:
+                scores[file_name]=0
+            scores[file_name]=weight
+
+    ranked_docs=sorted(
+        scores.items(),
+        key= lambda x: (-x[1],x[0])
+    )
+    return [{"file_name":doc,"score":round(score,4)} for doc,score in ranked_docs]
+
+
+def search_bm25_index_with_snippets( query: str,bm25_index:  dict[str,dict[str,float]],file_data:dict[str,str]) -> list[dict]:
+    results=[]
+    tokens=set(tokenize_with_stopwords(query,STOPWORDS))
+    scores:dict[str,float]={}
+    for token in tokens:
+        doc_set=bm25_index.get(token,{})
+        for file_name,weight in doc_set.items():
+            if weight <= 0:
+                continue
+            if file_name not in scores:
+                scores[file_name]=0
+            scores[file_name]=weight
+
+    ranked_docs=sorted(
+        scores.items(),
+        key= lambda x: (-x[1],x[0])
+    )
+    for file_name,score in ranked_docs:
+        snippet=create_snippet(file_data[file_name],tokens)
+        results.append({
+            "file_name":file_name,
+            "score":score,
+            "snippet":snippet
+        })
+    return results
+
 def build_tfidf_index(fileData:dict[str,str])-> dict[str,dict[str,float]]:
     ranked_index=build_ranked_inverted_index(fileData)
     total_docs=len(fileData)
