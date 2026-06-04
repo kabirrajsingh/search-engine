@@ -231,6 +231,58 @@ def basic_search(query: str,fileData: dict[str,str]) -> list[dict]:
             res.append(fileName)
     return [{"file_name":file_name} for file_name in res]
 
+
+def create_phrase_snippet(content: str,query:str, max_snippets=3,snippet_window=100) -> list[str]:
+    lower_content=content.lower()
+    phrase=" ".join(tokenize(query))
+    snippets=[]
+    if not phrase:
+        return snippets
+    start_pos=0
+    while len(snippets) < max_snippets:
+        position=lower_content.find(phrase,start_pos)
+        if position == -1:
+            break
+
+        start=max(0,position-snippet_window//2)
+        end=min(len(content),position+snippet_window//2)
+        snippet=content[start:end].replace("\n"," ")
+
+        if snippet not in snippets:
+            snippets.append(snippet)
+        start_pos=position+len(phrase)
+    return snippets
+
+def count_phrase_occurences(query: str, content:str) -> int:
+    phrase_tokens=tokenize(query)
+    content_tokens=tokenize(content)
+    phrase_length=len(phrase_tokens)
+    if phrase_length < 0 :
+        return 0
+    count =0
+
+    for index in range(len(content_tokens)-phrase_length+1):
+        if(content_tokens[index:index+phrase_length]== phrase_tokens):
+            count=count+1
+    return count
+
+def phrase_search(query:str,fileData: dict[str,str]) -> list[dict]:
+    results=[]
+    for file_name,file_content in fileData.items():
+        phrase_count= count_phrase_occurences(query,file_content)
+        if phrase_count <= 0:
+            continue
+        results.append({
+            "file_name":file_name,
+            "score":phrase_count,
+            "phrase_count":phrase_count,
+            "snippet":create_phrase_snippet(file_content,query)
+        })
+    results.sort(
+        key= lambda x : (-x["phrase_count"] , x["file_name"])
+    )
+    return results
+
 def build_inverted_index(fileData: dict[str,str]) -> dict[str,set[str]]:
     result={}
     for file_name,file_content in fileData.items():
