@@ -68,3 +68,9 @@ automobile
 
 not recommended
 do not recommend me
+
+machine learning != machine .... learning
+
+Normal search -> Does this document contain the query words?
+
+Phrase search -> Do these query words appear next ot each other in this exact order?
