@@ -32,6 +32,20 @@ def calculate_document_lengths(fileData:dict[str,str]) -> dict[str,int]:
         for file_name, file_content in fileData.items()
     }
 
+def calculate_bm25_length_normalizer(document_length,average_document_length,b) -> float:
+    if(average_document_length<=0):
+        return 0.0
+    return  1 - b + b * (document_length/average_document_length)
+
+
+def calculate_bm25_satured_tf(term_frequency,length_normalizer,k1):
+    return (term_frequency * (k1+1)) / (term_frequency + k1 * length_normalizer) 
+
+def calculate_bm25_term_contribution(term_frequency,idf,document_length,average_document_length,k1,b) -> float:
+        length_normalizer =calculate_bm25_length_normalizer(document_length,average_document_length,b)  
+        saturated_tf = calculate_bm25_satured_tf(term_frequency,length_normalizer,k1) 
+        return idf * saturated_tf
+
 def build_bm25_index(fileData:dict[str,str],k1:float=1.5,b:float=0.75) -> dict[str,dict[str,float]]:
     ranked_index=build_ranked_inverted_index(fileData)
     document_lengths = calculate_document_lengths(fileData)
@@ -45,11 +59,58 @@ def build_bm25_index(fileData:dict[str,str],k1:float=1.5,b:float=0.75) -> dict[s
         result[token] ={}
         for file_name, term_frequency in document_counts.items():
             document_length=document_lengths[file_name]
-            length_normalizer = 1 - b + b * (document_length/average_document_length)
-            saturated_tf = (term_frequency * (k1+1)) / (term_frequency + k1 * length_normalizer) 
-            result[token][file_name]= idf * saturated_tf
+            result[token][file_name]=calculate_bm25_term_contribution(term_frequency,idf,document_length,average_document_length,k1,b)
     return result
 
+def explain_bm25_result(query:str,file_name:str, bm25_index:dict[str,dict[str,float]],file_data:dict[str,str],k1:float=1.5,b:float=0.75) -> dict:
+    query_tokens=tokenize_with_stopwords(query,STOPWORDS)
+    ranked_index=build_ranked_inverted_index(file_data)
+    document_lengths=calculate_document_lengths(file_data)
+    average_document_lengths=calculate_average_document_lengths(document_lengths)
+    total_docs=len(file_data)
+    document_length=document_lengths.get(file_name,0)
+    matched_terms=[]
+    unmatched_terms=[]
+    raw_score=0.0
+    for token in query_tokens:
+        document_counts=ranked_index.get(token,{})
+        term_frequency=document_counts.get(file_name,0)
+        if term_frequency <= 0:
+            unmatched_terms.append(token)
+            continue
+        document_frequency=len(document_counts)
+        idf=calculate_bm25_idf(total_docs,document_frequency)
+        length_normalizer=calculate_bm25_length_normalizer(document_length,average_document_lengths,b)
+        saturated_tf=calculate_bm25_satured_tf(term_frequency,length_normalizer,k1)
+        contribution=bm25_index.get(token,{}).get(file_name)
+        if contribution is None:
+            contribution=idf * saturated_tf
+        raw_score+=contribution
+        matched_terms.append({
+            "term":token,
+            "term_frequency":term_frequency,
+            "document_frequency":document_frequency,
+            "idf":idf,
+            "document_length":document_length,
+            "average_document_lengths":average_document_lengths,
+            "length_normalizer":length_normalizer,
+            "saturated_tf":saturated_tf,
+            "contribution":contribution
+        })
+    return {
+        "file_name":file_name,
+        "score":raw_score,
+       " matched_terms":matched_terms,
+        "unmatched_terms": unmatched_terms,
+        "score_explanation": " BM25 score is the sum of each matched query term contribution"
+    }
+
+def search_bm25_index_with_explanation(query:str, bm25_index:dict[str,dict[str,float]],file_data:dict[str,str],k1:float=1.5,b:float=0.75) -> list[dict]:
+    ranked_docs=search_bm25_index(query,bm25_index)
+    return [
+        explain_bm25_result(query,result['file_name'],bm25_index,file_data,k1,b) for result in ranked_docs
+    ]
+    
 def calculate_average_document_lengths(document_lengths: dict[str,int]) -> float:
     if not document_lengths:
         return 0.0
@@ -67,7 +128,7 @@ def search_bm25_index(query:str, bm25_index:dict[str,dict[str,float]]) -> list[d
                 continue
             if file_name not in scores:
                 scores[file_name]=0
-            scores[file_name]=weight
+            scores[file_name]+=weight
 
     ranked_docs=sorted(
         scores.items(),
@@ -87,7 +148,7 @@ def search_bm25_index_with_snippets( query: str,bm25_index:  dict[str,dict[str,f
                 continue
             if file_name not in scores:
                 scores[file_name]=0
-            scores[file_name]=weight
+            scores[file_name]+=weight
 
     ranked_docs=sorted(
         scores.items(),

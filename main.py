@@ -1,4 +1,4 @@
-from search_engine.searchengine import basic_search, build_bm25_index, build_inverted_index, build_ranked_inverted_index, build_tfidf_index, check_file_exists, read_index, save_index, search_bm25_index, search_bm25_index_with_snippets, search_inverted_index, search_ranked_inverted_index, search_ranked_inverted_index_with_snippets, search_tfidf_index, search_tfidf_index_with_snippets
+from search_engine.searchengine import basic_search, build_bm25_index, build_inverted_index, build_ranked_inverted_index, build_tfidf_index, check_file_exists, read_index, save_index, search_bm25_index, search_bm25_index_with_snippets, search_inverted_index, search_ranked_inverted_index, search_ranked_inverted_index_with_snippets, search_tfidf_index, search_tfidf_index_with_snippets, search_bm25_index_with_explanation
 import os
 import time
 
@@ -105,6 +105,23 @@ BM25_DEMO_DOCUMENTS ={
     "relevant_nlp_retrieval.txt":"nlp retrieval search ranking",
     "background_retrieval.txt":"retrieval database indexing"
 }
+def print_explainable_result(result:dict):
+    print(f"FILE_NAME: {result['file_name']}")
+    print(f"FINAL_SCORE: {result['score']}")
+    print(f"MATCHED TERMS")    
+    for term in result["matched_terms"]:
+        print(
+            f"   {term['term']}  ->"
+            f"tf={term['term_frequency']},"
+            f"df={term['document_frequency']},",
+            f"idf={term['idf']},"
+            f"saturated_tf={term['saturated_tf']},"
+            f"contribution={term['contribution']},"
+        )
+    if result["unmatched_terms"]:
+        print(f"unmatched_terms: {','.join(result['unmatched_terms'])}")
+    contribution_total=sum(term["contribution"] for term in result["matched_terms"])
+    print(f" SCORE_CHECK: {round(contribution_total,4)} from matched term terms")
 
 def show_demo_without_tfidf():
     ranked_inverted_index=load_or_build_ranked_index(TFIDF_DEMO_DOCUMENTS)
@@ -122,10 +139,18 @@ def show_demo_with_bm25():
     bm25_index=build_bm25_index(BM25_DEMO_DOCUMENTS)
     print(search_bm25_index(BM25_DEMO_QUERY,bm25_index))
 
+
+def show_demo_with_bm25_explanations():
+    bm25_index=build_bm25_index(BM25_DEMO_DOCUMENTS)
+    explainable_results=search_bm25_index_with_explanation(BM25_DEMO_QUERY,bm25_index,BM25_DEMO_DOCUMENTS)
+    for result in explainable_results:
+        print(result)
+        print("*" * 50)
+
 def main():
     file_details=load_files("data")
-    run_method_comparison(file_details)
-    # show_demo_with_bm25()
+    # run_method_comparison(file_details)
+    show_demo_with_bm25_explanations()
 
 if __name__=="__main__":
     main()
