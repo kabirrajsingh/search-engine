@@ -14,6 +14,105 @@ def tokenize_with_stopwords(query:str , stopwords:set[str]) -> list[str]:
     return [token for token in tokenize(query)
             if token not in stopwords]
 
+BOOLEAN_OPERATORS= {"AND", "OR" , "NOT"}
+
+def parse_boolean_query(query:str) -> list[str]:
+    result=[]
+    tokens=tokenize(query)
+    for token in tokens:
+        if token.upper() in BOOLEAN_OPERATORS:
+            result.append(token.upper())
+        else:
+            result.append(token.lower())
+    return result
+
+
+def get_boolean_query_terms(query_tokens: list[str]):
+    positive_terms=[]
+    negative_terms=[]
+    next_term_is_negative=False
+    for token in query_tokens:
+        if token== "NOT":
+            next_term_is_negative=True
+            continue
+        if token in ("AND","OR"):
+            continue
+        if next_term_is_negative:
+            negative_terms.append(token)
+            next_term_is_negative=False
+        else:
+            positive_terms.append(token)
+    return positive_terms,negative_terms
+
+def evaluate_boolean_query(query_tokens:list[str],invertedIndex: dict[str,set[str]],all_documents: set[str]) -> set[str]:
+    # ['python', 'AND', 'search', 'NOT', 'database']
+    position = 0
+    def parse_factor() -> set[str]:
+        nonlocal position
+        if position>=len(query_tokens):
+            return set()
+        token=query_tokens[position]
+        if token == "NOT":
+            position+=1
+            return all_documents-parse_factor()
+        if token in {"AND","OR"}:
+            position+=1
+            return set()
+        position+=1
+        return set(invertedIndex.get(token,set()))
+
+    def parse_and() -> set[str]:
+        nonlocal position
+        result=parse_factor()
+
+        while position < len(query_tokens):
+            token=query_tokens[position]
+            if token == "AND":
+                position+=1
+                result=result & parse_factor()
+            elif token == "NOT":
+                result=result & parse_factor()
+            else:
+                break
+        return result
+    def parse_or() -> set[str]:
+        result=[]
+        nonlocal position
+        result=parse_and()
+        while position < len(query_tokens):
+            if query_tokens[position] != "OR":
+                break
+            position+=1
+            result=result | parse_and()
+        return result
+    
+    return parse_or()
+    
+
+
+def search_boolean( query: str,invertedIndex: dict[str,set[str]],all_documents: set[str] ) -> list[dict]:
+    query_tokens=parse_boolean_query(query)
+    positive_terms,negative_terms=get_boolean_query_terms(query_tokens)
+    matching_docs= evaluate_boolean_query(query_tokens,invertedIndex,all_documents)
+    results = []
+    for file_name in sorted(matching_docs):
+        matched_terms=[
+            term for term in positive_terms
+            if file_name in invertedIndex.get(term,set())
+        ]
+        results.append({
+            "file_name":file_name,
+            "matched_terms":matched_terms,
+            "excluded_terms":negative_terms,
+            "expression":" ".join(query_tokens)
+        })
+    return results
+
+
+def boolean_search(query: str, fileData:dict[str,str]) -> list[dict]:
+    inverted_index=build_inverted_index(fileData)
+    return search_boolean(query,inverted_index,set(fileData.keys()))
+
 
 def calculate_idf(total_docs,frequency) -> float:
     if(total_docs) <= 0:

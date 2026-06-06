@@ -1,4 +1,4 @@
-from search_engine.searchengine import basic_search, build_bm25_index, build_inverted_index, build_ranked_inverted_index, build_tfidf_index, check_file_exists, phrase_search, read_index, save_index, search_bm25_index, search_bm25_index_with_snippets, search_inverted_index, search_ranked_inverted_index, search_ranked_inverted_index_with_snippets, search_tfidf_index, search_tfidf_index_with_snippets, search_bm25_index_with_explanation
+from search_engine.searchengine import basic_search, boolean_search, build_bm25_index, build_inverted_index, build_ranked_inverted_index, build_tfidf_index, check_file_exists, parse_boolean_query, phrase_search, read_index, save_index, search_bm25_index, search_bm25_index_with_snippets, search_inverted_index, search_ranked_inverted_index, search_ranked_inverted_index_with_snippets, search_tfidf_index, search_tfidf_index_with_snippets, search_bm25_index_with_explanation
 import os
 import time
 
@@ -116,6 +116,17 @@ PHRASE_DEMO_DOCUMENTS={
     "reversed_words.txt":" learning machine behavior is not the same phrase"
 }
 
+BOOLEAN_DEMO_QUERY=" python AND search OR database"
+BOOLEAN_DEMO_DOCUMENTS={
+    "python_search.txt":"python search engine tutorial",
+    "python_database.txt":"python database search indexing",
+    "search_only.txt":"search ranking BM25",
+    "python_only.txt":" python scripting automation",
+    "database_only.txt":"database indexing tutorial"
+}
+
+
+
 def print_explainable_result(result:dict):
     print(f"FILE_NAME: {result['file_name']}")
     print(f"FINAL_SCORE: {result['score']}")
@@ -150,7 +161,9 @@ def show_demo_with_bm25():
     bm25_index=build_bm25_index(BM25_DEMO_DOCUMENTS)
     print(search_bm25_index(BM25_DEMO_QUERY,bm25_index))
 
-
+def show_demo_with_boolean_search():
+    result=boolean_search(BOOLEAN_DEMO_QUERY, BOOLEAN_DEMO_DOCUMENTS) 
+    print(result)
 def phrase_search_demo():
     phrase_search_output=phrase_search(PHRASE_SEARCH,PHRASE_DEMO_DOCUMENTS)
     for result in phrase_search_output:
@@ -164,10 +177,11 @@ def show_demo_with_bm25_explanations():
         print("*" * 50)
 
 def main():
-    file_details=load_files("data")
+    # file_details=load_files("data")
     # run_method_comparison(file_details)
     # show_demo_with_bm25_explanations()
-    phrase_search_demo()
+    # phrase_search_demo()
+    show_demo_with_boolean_search()
 
 if __name__=="__main__":
     main()

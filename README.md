@@ -74,3 +74,38 @@ machine learning != machine .... learning
 Normal search -> Does this document contain the query words?
 
 Phrase search -> Do these query words appear next ot each other in this exact order?
+
+
+DAY 13
+BOOLEAN SEARCH
+Before -> Which documents MATCH these query words?
+
+After -> Which documents SATISFY this exact logic?
+
+- AND -> intersection -> left_set & right_set
+- OR  -> union -> left_set | right_set
+- NOT -> difference -> all_documents-term_set
+
+search query-> python AND search NOT database
+BOOLEAN_DEMO_DOCUMENTS={
+    "python_search.txt":"python search engine tutorial",
+    "python_database.txt":"python database search indexing",
+    "search_only.txt":"search ranking BM25",
+    "python_only.txt":" python scripting automation",
+    "database_only.txt":"database indexing tutorial"
+}
+
+python -> {python_search.txt, python_database.txt, python_only.txt}
+search -> {python_search.txt , python_database.txt, search_only.txt}
+database -> {python_database.txt, database_only.txt}
+ 
+ set ops- > intersection, union, difference
+
+ Parsing must be done with precendece-
+ - NOT first
+ - AND second
+ - OR third
+
+python AND django
+
+java OR kotlin
