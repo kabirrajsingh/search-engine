@@ -74,3 +74,11 @@ machine learning != machine .... learning
 Normal search -> Does this document contain the query words?
 
 Phrase search -> Do these query words appear next ot each other in this exact order?
+
+Packaging The App
+- The app now has a CLI module at `search_engine/cli.py`.
+- Run as a module: `uv run python -m search_engine --mode bm25 "operating system scheduling"`
+- Run as a console script after project sync/install: `uv run search-engine --mode bm25 "operating system scheduling"`
+- CLI options: `--mode basic|ranked|tfidf|bm25|phrase`, `--data data`, `--limit 5`.
+- `main.py` now demonstrates the packaged CLI instead of being the only runtime path.
+- Day 14 script: `day14_script.md`

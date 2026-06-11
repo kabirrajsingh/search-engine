@@ -1,12 +1,22 @@
 [project]
 name = "searchengine"
 version = "0.1.0"
-description = "Add your description here"
+description = "Tutorial search engine with ranking, phrase search, and CLI demos"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "stopwords>=1.0.2",
 ]
+
+[project.scripts]
+search-engine = "search_engine.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["search_engine"]
 
 [dependency-groups]
 dev = [

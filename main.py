@@ -1,6 +1,8 @@
-from search_engine.searchengine import basic_search, build_bm25_index, build_inverted_index, build_ranked_inverted_index, build_tfidf_index, check_file_exists, phrase_search, read_index, save_index, search_bm25_index, search_bm25_index_with_snippets, search_inverted_index, search_ranked_inverted_index, search_ranked_inverted_index_with_snippets, search_tfidf_index, search_tfidf_index_with_snippets, search_bm25_index_with_explanation
 import os
 import time
+
+from search_engine.cli import main as cli_main
+from search_engine.searchengine import basic_search, build_bm25_index, build_inverted_index, build_ranked_inverted_index, build_tfidf_index, check_file_exists, phrase_search, read_index, save_index, search_bm25_index, search_bm25_index_with_snippets, search_inverted_index, search_ranked_inverted_index, search_ranked_inverted_index_with_snippets, search_tfidf_index, search_tfidf_index_with_snippets, search_bm25_index_with_explanation
 
 def load_files(path: str) -> dict[str,str]:
     fileNames=os.listdir(path)
@@ -88,7 +90,7 @@ def run_method_comparison(file_details: dict[str,str]):
     print("*"*50)
     print("FINAL SUMMARY")
     for result in results:
-        print(f"The time taken for method: {result["method_name"]} is {result["time_taken"]*100} ms")
+        print(f"The time taken for method: {result['method_name']} is {result['time_taken']*100} ms")
 
 
 TFIDF_DEMO_QUERY="system nlp"
@@ -156,6 +158,14 @@ def phrase_search_demo():
     for result in phrase_search_output:
         print(result)
 
+def packaging_demo():
+    print("DAY 14: PACKAGING THE APP")
+    print("The app can now run as a package CLI.")
+    print("Command:")
+    print('uv run search-engine --mode bm25 --limit 3 "operating system scheduling"')
+    print("-"*50)
+    cli_main(["--mode","bm25","--limit","3","operating system scheduling"])
+
 def show_demo_with_bm25_explanations():
     bm25_index=build_bm25_index(BM25_DEMO_DOCUMENTS)
     explainable_results=search_bm25_index_with_explanation(BM25_DEMO_QUERY,bm25_index,BM25_DEMO_DOCUMENTS)
@@ -164,10 +174,10 @@ def show_demo_with_bm25_explanations():
         print("*" * 50)
 
 def main():
-    file_details=load_files("data")
+    # file_details=load_files("data")
     # run_method_comparison(file_details)
     # show_demo_with_bm25_explanations()
-    phrase_search_demo()
+    packaging_demo()
 
 if __name__=="__main__":
     main()
