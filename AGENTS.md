@@ -12,8 +12,6 @@ Small Python search-engine project used for day-by-day search concepts: tokeniza
 - Demo/runtime code lives in `main.py`.
 - Tests live in `tests/engine_test.py`.
 - Documents used by the demo live in `data/`.
-- Tutorial narration for Day 13 Boolean search lives in `day13_script.md`.
-- Tutorial narration for Day 14 packaging lives in `day14_script.md`.
 
 ## Normal Commands
 

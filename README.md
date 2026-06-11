@@ -81,4 +81,3 @@ Packaging The App
 - Run as a console script after project sync/install: `uv run search-engine --mode bm25 "operating system scheduling"`
 - CLI options: `--mode basic|ranked|tfidf|bm25|phrase`, `--data data`, `--limit 5`.
 - `main.py` now demonstrates the packaged CLI instead of being the only runtime path.
-- Day 14 script: `day14_script.md`
